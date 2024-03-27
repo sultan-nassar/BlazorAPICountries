@@ -1,0 +1,106 @@
+﻿@page "/Countries"
+@using BlazorAPICountries.Interfaces
+@using BlazorAPICountries.Models
+@using BlazorAPICountries.Services
+@inject ICountryService countryService;
+
+<h3>Countries</h3>
+
+@if (countries == null || countries.Count == 0)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <input type="text" @bind="minPopulation"  placeholder="Search by population MinNumber" />
+    <input type="text" @bind="maxPopulation"  placeholder="Search by population MaxNumber" />
+    <button @onclick="SearchPopulation">filter</button>
+    <input type="text"  @oninput="PerformSearch" placeholder="Search by country name" />
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Capital</th>
+            <th>Population</th>
+            <th>Currencies</th>
+            <th>Flags</th>
+            <th>Maps</th>
+
+
+            <!-- Add other columns as needed -->
+        </tr>
+    </thead>
+    <tbody>
+            @foreach (var country in filteredCountries)
+        {
+            <tr>
+                <td>@country.Name.Common</td>
+                <td>@(country.Capital?.FirstOrDefault()?? "N/A")</td>
+                <td>@country.Population</td>
+                    <td>
+                        @if (country.Currencies != null)
+                        {
+                            @foreach (var currency in country.Currencies)
+                            {
+                                <div>@currency.Key</div>
+                                <div>@currency.Value.Name - @currency.Value.Symbol</div>
+                            }
+                        }
+                        else
+                        {
+                            <span>No currency data available</span>
+                        }
+                    </td>
+                <td> <img src="@country.Flags.png" alt="there is no image" style="width: 50px; height: auto;" /></td>
+                <td><a href="@country.Maps.googleMaps">googleMaps</a></td>
+                <!-- Add other columns as needed -->
+            </tr>
+        }
+    </tbody>
+</table>
+}
+@code {
+
+    private List<Country> countries = new List<Country>();
+    // private string searchQuery;
+    private int minPopulation;
+    private int maxPopulation;
+
+    // Filtered list of countries based on search query
+    private List<Country> filteredCountries = new List<Country>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        countries = await countryService.GetAllCountriesAsync();
+
+        filteredCountries = countries;
+                StateHasChanged();
+
+
+    }
+
+    // Method to handle search functionality
+    private async Task PerformSearch(ChangeEventArgs e)
+    {
+        filteredCountries = await countryService.SearchCountryByNameAsync(e.Value.ToString());
+
+    }
+
+
+    private async Task SearchPopulation()
+    {
+        filteredCountries = await countryService.GetCountryByPopulationAsync(minPopulation, maxPopulation);
+
+
+    }
+
+    // Trigger search when the search query changes
+    // protected override async Task OnAfterRenderAsync(bool firstRender)
+    // {
+    //     if (firstRender)
+    //     {
+    //         PerformSearch();
+    //         StateHasChanged();
+    //     }
+    }
